@@ -1,0 +1,37 @@
+{
+  "name": "@striderlabs/mcp-gmail",
+  "version": "0.1.0",
+  "description": "MCP server for Gmail - let AI agents send, read, and search email",
+  "main": "dist/index.js",
+  "bin": {
+    "striderlabs-mcp-gmail": "dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "gmail",
+    "email",
+    "ai-agent",
+    "strider",
+    "model-context-protocol"
+  ],
+  "author": "Strider Labs <hello@striderlabs.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/striderlabs/mcp-gmail"
+  },
+  "homepage": "https://striderlabs.ai",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "googleapis": "^131.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}

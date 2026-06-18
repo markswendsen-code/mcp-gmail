@@ -81,6 +81,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "BCC recipients (comma-separated, optional)",
             },
+            confirm: {
+              type: "boolean",
+              description:
+                "Must be set to true to actually send. When false or omitted, returns a preview of the email and sends nothing (sending an email is irreversible).",
+            },
           },
           required: ["to", "subject", "body"],
         },
@@ -151,13 +156,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     switch (name) {
       case "gmail_send": {
-        const { to, subject, body, cc, bcc } = args as {
+        const { to, subject, body, cc, bcc, confirm } = args as {
           to: string;
           subject: string;
           body: string;
           cc?: string;
           bcc?: string;
+          confirm?: boolean;
         };
+
+        // CONFIRM GATE: sending an email is irreversible. Preview and send
+        // nothing unless the caller explicitly sets confirm === true.
+        if (confirm !== true) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: false,
+                  preview: true,
+                  action: "gmail_send",
+                  message:
+                    "Preview only — no email was sent. Sending email is irreversible. Re-run with confirm=true to actually send.",
+                  email: {
+                    to,
+                    cc: cc || null,
+                    bcc: bcc || null,
+                    subject,
+                    body,
+                  },
+                }),
+              },
+            ],
+          };
+        }
 
         const messageParts = [
           `To: ${to}`,
@@ -179,6 +211,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           userId: "me",
           requestBody: { raw: rawMessage },
         });
+
+        // VERIFY-OR-FAIL-LOUD: only report success if the Gmail API returned a
+        // real message id. Never fabricate a confirmation.
+        if (!response.data.id) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: false,
+                  isError: true,
+                  error:
+                    "Gmail API did not return a message id; the email may or may not have been sent. Verify in your Gmail Sent folder before retrying.",
+                }),
+              },
+            ],
+            isError: true,
+          };
+        }
 
         return {
           content: [
